@@ -1,11 +1,53 @@
 import Head from 'next/head'
-import Image from 'next/image'
-import { Inter } from 'next/font/google'
-import styles from '@/styles/Home.module.css'
+import { ChangeEvent, useRef, useState } from 'react';
+import { ZodRawShape, z } from "zod";
 
-const inter = Inter({ subsets: ['latin'] })
+const formSchema = z.object({
+  nome: z.string().min(3, 'Nome deve ter no mínimo 3 caracteres.'),
+  sobrenome: z.string(),
+  senha: z.string(),
+  confirmar_senha: z.string()
+}).refine(data => data.senha === data.confirmar_senha, {
+  message: "Senha e confirmação de senha não são iguais.",
+  path: ['confirmar_senha']
+});
+
+type FormSchemaType = z.infer<typeof formSchema>;
 
 export default function Home() {
+  const formData = useRef<FormSchemaType>({
+    nome: '',
+    sobrenome: '',
+    senha: '',
+    confirmar_senha: ''
+  });
+
+  const [formErrors, setFormErrors] = useState<Partial<FormSchemaType>>({});
+
+  function handleSubmit(e: ChangeEvent<HTMLFormElement>) {
+    console.log(formData.current);
+    e.preventDefault();
+    try {
+      formSchema.parse(formData.current);
+      setFormErrors({});
+      console.log("Passou")
+    } catch (error) {
+      console.log("Erro")
+      if (error instanceof z.ZodError) {
+        const errorMap = error.formErrors.fieldErrors;
+        setFormErrors(errorMap);
+      }
+    }
+  }
+
+  function handleChange(e: ChangeEvent<HTMLInputElement>) {
+    formData.current = {
+      ...formData.current,
+      [e.target.name]: e.target.value
+    };
+
+  }
+
   return (
     <>
       <Head>
@@ -14,100 +56,18 @@ export default function Home() {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <main className={`${styles.main} ${inter.className}`}>
-        <div className={styles.description}>
-          <p>
-            Get started by editing&nbsp;
-            <code className={styles.code}>src/pages/index.tsx</code>
-          </p>
-          <div>
-            <a
-              href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              By{' '}
-              <Image
-                src="/vercel.svg"
-                alt="Vercel Logo"
-                className={styles.vercelLogo}
-                width={100}
-                height={24}
-                priority
-              />
-            </a>
-          </div>
-        </div>
-
-        <div className={styles.center}>
-          <Image
-            className={styles.logo}
-            src="/next.svg"
-            alt="Next.js Logo"
-            width={180}
-            height={37}
-            priority
-          />
-        </div>
-
-        <div className={styles.grid}>
-          <a
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <h2>
-              Docs <span>-&gt;</span>
-            </h2>
-            <p>
-              Find in-depth information about Next.js features and&nbsp;API.
-            </p>
-          </a>
-
-          <a
-            href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <h2>
-              Learn <span>-&gt;</span>
-            </h2>
-            <p>
-              Learn about Next.js in an interactive course with&nbsp;quizzes!
-            </p>
-          </a>
-
-          <a
-            href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <h2>
-              Templates <span>-&gt;</span>
-            </h2>
-            <p>
-              Discover and deploy boilerplate example Next.js&nbsp;projects.
-            </p>
-          </a>
-
-          <a
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <h2>
-              Deploy <span>-&gt;</span>
-            </h2>
-            <p>
-              Instantly deploy your Next.js site to a shareable URL
-              with&nbsp;Vercel.
-            </p>
-          </a>
-        </div>
+      <main>
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', gap: '10px' }}>
+          <input type="text" name="nome" placeholder='Nome' onChange={handleChange} />
+          {formErrors.nome && <p style={{ color: 'red' }}>{formErrors.nome}</p>}
+          <input type="text" name="sobrenome" placeholder='Sobrenome' onChange={handleChange} />
+          {formErrors.sobrenome && <p style={{ color: 'red' }}>{formErrors.sobrenome}</p>}
+          <input type="text" name="senha" placeholder='Senha' onChange={handleChange} />
+          {formErrors.senha && <p style={{ color: 'red' }}>{formErrors.senha}</p>}
+          <input type="text" name="confirmar_senha" placeholder='Confirmar Senha' onChange={handleChange} />
+          {formErrors.confirmar_senha && <p style={{ color: 'red' }}>{formErrors.confirmar_senha}</p>}
+          <input type="submit" value="Enviar" />
+        </form>
       </main>
     </>
   )
